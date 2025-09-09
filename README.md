@@ -2,14 +2,14 @@
 
 Mục tiêu: Hệ thống sẽ phát hiện xem ảnh là ảnh người thật hay là ảnh genAI hoặc ảnh qua ứng dụng di động bao gồm các bước sau:
 
-- Thu thập dữ liệu .               Complete
+- Thu thập dữ liệu .               
 
-- Tiền xử lý                          X
+- Tiền xử lý                          
 
-- Chọn mô hình                        X
+- Chọn mô hình                        
 
-- Huấn luyện & đánh giá               X
+- Huấn luyện & đánh giá               
 
-- Triển khai API + UI                 X
+- Triển khai API + UI                 
 
-- Cải tiến & cập nhật                 X
+- Cải tiến & cập nhật                 
