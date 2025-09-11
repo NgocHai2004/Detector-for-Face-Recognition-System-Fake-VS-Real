@@ -13,3 +13,7 @@ Mục tiêu: Hệ thống sẽ nhận diện xem ảnh là ảnh người thật
 - Triển khai API + UI                 
 
 - Cải tiến & cập nhật                 
+
+# Xử lí lường dữ liệu của hệ thống 
+
+<img width="803" height="637" alt="image" src="https://github.com/user-attachments/assets/e8db07e5-2eb9-41db-98cf-0bf3f6de58f5" />
