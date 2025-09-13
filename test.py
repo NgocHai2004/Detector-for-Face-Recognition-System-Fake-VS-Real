@@ -1,24 +1,23 @@
+import cv2
 import torch
 from torchvision import models, transforms
+from ultralytics import YOLO
 from PIL import Image
-import matplotlib.pyplot as plt
-import numpy as np
 
-# ======================
-# Load lại model đã train
-# ======================
+
+# Load YOLOv8 (face detection)
+yolo_model = YOLO("detect/yolov8n.pt")  # bạn cần file weight detect mặt
+
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+clf_model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
+num_features = clf_model.fc.in_features
+clf_model.fc = torch.nn.Linear(num_features, 2)
+clf_model.load_state_dict(torch.load("resnet18_fakeface.pth", map_location=device))
+clf_model = clf_model.to(device)
+clf_model.eval()
 
-model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
-num_features = model.fc.in_features
-model.fc = torch.nn.Linear(num_features, 2)  # 2 classes
-model.load_state_dict(torch.load("resnet18_fakeface.pth", map_location=device))
-model = model.to(device)
-model.eval()
 
-# ======================
-# Transform test (giống khi train)
-# ======================
 test_transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -26,27 +25,47 @@ test_transform = transforms.Compose([
                          std=[0.229, 0.224, 0.225])
 ])
 
-# ======================
-# Dự đoán cho 1 ảnh bất kỳ
-# ======================
-img_path = "test.jpg"   # đổi đường dẫn ảnh của bạn
-image = Image.open(img_path).convert("RGB")
-input_tensor = test_transform(image).unsqueeze(0).to(device)
+class_names = ["fake", "real"]
 
-# Forward
-with torch.no_grad():
-    output = model(input_tensor)
-    _, pred = torch.max(output, 1)
 
-class_names = ["fake", "real"]  # đổi đúng theo dataset của bạn
-pred_class = class_names[pred.item()]
+cap = cv2.VideoCapture(0)  
 
-# ======================
-# Hiển thị kết quả
-# ======================
-plt.imshow(image)
-plt.title(f"Predicted: {pred_class}")
-plt.axis("off")
-plt.show()
+while cap.isOpened():
+    ret, frame = cap.read()
+    if not ret:
+        break
 
-print("Dự đoán:", pred_class)
+    # B1: YOLO detect face
+    results = yolo_model(frame, conf=0.5)
+    for r in results:
+        boxes = r.boxes.xyxy.cpu().numpy().astype(int)  # to numpy
+        for box in boxes:
+            x1, y1, x2, y2 = box
+            face_crop = frame[y1:y2, x1:x2]
+
+            if face_crop.size == 0:
+                continue
+
+            # B2: Transform face
+            pil_img = Image.fromarray(cv2.cvtColor(face_crop, cv2.COLOR_BGR2RGB))
+            input_tensor = test_transform(pil_img).unsqueeze(0).to(device)
+
+            # B3: Predict real/fake
+            with torch.no_grad():
+                output = clf_model(input_tensor)
+                _, pred = torch.max(output, 1)
+                pred_class = class_names[pred.item()]
+
+            # Vẽ bounding box + label
+            color = (0, 255, 0) if pred_class == "real" else (0, 0, 255)
+            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+            cv2.putText(frame, pred_class, (x1, y1 - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
+
+    cv2.imshow("YOLOv8 + FakeFace Detection", frame)
+
+    if cv2.waitKey(1) & 0xFF == ord("q"):
+        break
+
+cap.release()
+cv2.destroyAllWindows()

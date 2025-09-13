@@ -9,15 +9,15 @@ from Make_data import MyDataset
 train_transform = transforms.Compose([
     transforms.Resize((224, 224)),
 
-    transforms.RandomHorizontalFlip(p=0.5),       # lật ngang
-    transforms.RandomRotation(10),                # xoay ±10 độ
+    transforms.RandomHorizontalFlip(p=0.5),      
+    transforms.RandomRotation(10),              
     transforms.ColorJitter(brightness=0.2, 
                            contrast=0.2, 
                            saturation=0.2, 
-                           hue=0.1),              # thay đổi màu
-    transforms.RandomResizedCrop(224, scale=(0.8, 1.0)),  # crop ngẫu nhiên
-    transforms.RandomGrayscale(p=0.1),            # ngẫu nhiên về ảnh xám
-    transforms.GaussianBlur(3, sigma=(0.1, 2.0)), # làm mờ nhẹ
+                           hue=0.1),           
+    transforms.RandomResizedCrop(224, scale=(0.8, 1.0)),  
+    transforms.RandomGrayscale(p=0.1),            
+    transforms.GaussianBlur(3, sigma=(0.1, 2.0)), 
 
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], 
@@ -43,6 +43,9 @@ test_loader  = DataLoader(test_dataset, batch_size=8, shuffle=False)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)  
+for param in model.parameters():
+    print(model,param.shape,param.requires_grad)
+    param.requires_grad = False  
 num_features = model.fc.in_features
 model.fc = nn.Linear(num_features, 2) 
 model = model.to(device)
